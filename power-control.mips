@@ -1,0 +1,66 @@
+##
+# Power display
+#
+# Displays average battery charge (with colors
+# mathing the battery led colors)
+# power generation and power consumption
+# when the consumption is higher than generation,
+# power displays became red
+#
+# Also, outputs charge ratio as Setting
+# (useful in pair with backup generator scripts)
+#
+define BATTERIES -1388288459 # Large battery
+
+alias DisplayIn d0
+alias DisplayCharge d1
+alias DisplayOut d2
+alias SensorIn d3
+alias SensorOut d4
+
+alias PowerIn r0
+alias PowerOut r1
+alias Charge r2
+alias ChargeColor r3
+alias PowerColor r4
+
+# Set power displays to show wattage
+s DisplayIn Mode 2
+s DisplayOut Mode 2
+
+# Set charge display to show percentage
+s DisplayCharge Mode 1
+
+main:
+yield
+l PowerIn SensorIn PowerPotential
+l PowerOut SensorOut PowerActual
+lb Charge BATTERIES Ratio 0
+s DisplayIn Setting PowerIn
+s DisplayOut Setting PowerOut
+s DisplayCharge Setting Charge
+s db Setting Charge
+jal chargeColor
+jal powerColor
+j main
+
+chargeColor:
+move ChargeColor 4 # red
+brlt Charge 0.25 2
+move ChargeColor 3 # orange
+brlt Charge 0.5 2
+move ChargeColor 5 # yellow
+brlt Charge 0.75 2
+move ChargeColor 2 # green
+brlt Charge 0.95 2
+move ChargeColor -1 # blue (0 is buggy as hell)
+s DisplayCharge Color ChargeColor
+j ra
+
+powerColor:
+move PowerColor 2 # green
+brgt PowerIn PowerOut 2
+move PowerColor 4 # red
+s DisplayIn Color PowerColor
+s DisplayOut Color PowerColor
+j ra

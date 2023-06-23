@@ -1,0 +1,72 @@
+##
+# Fast airlock
+#
+# Works by depressurising the airlock and
+# repressurising it by opening the
+# corresponding door :)
+#
+# Activates with any of the door buttons
+#
+# All active vents connected to internal atmosphere
+# should be renamed to VentInner
+# All active vents connected to external atmosphere
+# should be renamed to VentOuter
+#
+define VENTS -1129453144
+define INNERVENTS HASH("VentInner")
+define OUTERVENTS HASH("VentOuter")
+
+alias ExternalDoor d0
+alias InternalDoor d1
+alias Sensor d3
+
+alias CurrentPressure r0
+
+# Turn off all vents
+sbn VENTS INNERVENTS On 0
+sbn VENTS OUTERVENTS On 0
+
+# Set both vent groups to outward mode
+sbn VENTS INNERVENTS Mode 1
+sbn VENTS OUTERVENTS Mode 1
+
+# Set doors to Logic control mode
+s InternalDoor Mode 1
+s ExternalDoor Mode 1
+
+# Set doors to default position (ready to exit)
+s InternalDoor Open 1
+s ExternalDoor Open 0
+
+main:
+yield
+l r2 InternalDoor Setting
+l r3 ExternalDoor Setting
+bne r2 r3 main # No buttons pressed, check again on next tick
+l r15 ExternalDoor Open
+beqz r15 exit # If external door is closed go to exit mode
+j enter # Else go to enter mode
+
+exit:
+s InternalDoor Open 0
+s ExternalDoor Open 0
+sbn VENTS INNERVENTS On 1
+jal waitpressure
+sbn VENTS INNERVENTS On 0
+s ExternalDoor Open 1
+j main
+
+enter:
+s InternalDoor Open 0
+s ExternalDoor Open 0
+sbn VENTS OUTERVENTS On 1
+jal waitpressure
+sbn VENTS OUTERVENTS On 0
+s InternalDoor Open 1
+j main
+
+waitpressure:
+yield
+l CurrentPressure Sensor Pressure
+beqz CurrentPressure ra
+j waitpressure

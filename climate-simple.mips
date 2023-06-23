@@ -1,0 +1,49 @@
+##
+# Simple climate control
+#
+# Turns on the wall heater when temperature
+# is below LowTemp, or wall coolers when
+# above HighTemp and keeps it working until
+# TargetTemp is reached
+#
+# Allows only one type of coolers
+#
+
+# define Coolers -1567752627 # Air coolers
+define Coolers -1369060582 # Water coolers
+define Heaters 24258244
+
+define LowTemp 292    # 18.85 Celcius
+define TargetTemp 298 # 24.85 Celcius
+define HighTemp 303   # 29.85 Celcius
+
+alias Sensor d0
+
+alias CurrentTemp r0
+
+# Turn off all coolers
+sb Coolers On 0
+sb Heaters On 0
+
+main:
+yield
+l CurrentTemp Sensor Temperature
+blt CurrentTemp LowTemp heat
+bgt CurrentTemp HighTemp cool
+sb Heaters On 0
+sb Coolers On 0
+j main
+
+cool:
+sb Coolers On 1
+yield
+l CurrentTemp Sensor Temperature
+bgt CurrentTemp TargetTemp cool
+j main
+
+heat:
+sb Heaters On 1
+yield
+l CurrentTemp Sensor Temperature
+blt CurrentTemp TargetTemp heat
+j main
